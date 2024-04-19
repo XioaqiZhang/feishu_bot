@@ -46,7 +46,62 @@ class FeishuTalk:
         }
         response = requests.post(url=url, data=json.dumps(payload_message), headers=headers)
         return response
+    
+    # 发送富文本消息
+    def sendFuTextmessage1(self, title, content):
+        '''
+        消息格式详细介绍： https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot
+        '''
+        url = self.chatGPT_url
+        headers = {
+            "Content-Type": "application/json; charset=utf-8",
+        }
+        payload_message = {
+            "msg_type": "post",
+            "content": {
+                "post": {
+                    "zh_cn": {
+                        "title": title,
+                        "content": content
+                    }
+                }
+            }
+        }
+        response = requests.post(url=url, data=json.dumps(payload_message), headers=headers)
+        return response
 	
+    # 发送飞书卡片
+    def sendCardMessage(self, content):
+        url = self.chatGPT_url
+        headers = {
+            "Content-Type": "application/json; charset=utf-8",
+        }
+        payload_message = {
+            "msg_type": "interactive",
+            "card": {
+                "config": {
+                    "wide_screen_mode": True
+                },
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "content": content,
+                            "tag": "lark_md"
+                        }
+                    }
+                ],
+                "header": {
+                    "template": "red",
+                    "title": {
+                        "content": "告警",
+                        "tag": "plain_text"
+                    }
+                }
+            }
+        }
+        response = requests.post(url=url, data=json.dumps(payload_message), headers=headers)
+        return response
 	# 微博头条榜单
     def getHotBand(self):
         url = "https://www.weibo.com/ajax/statuses/hot_band"
@@ -67,7 +122,11 @@ class FeishuTalk:
         return bandList_all
 
 	
+
     def get_zhihu_hot(self):
+        '''
+        返回一个字典，key为热榜标题，value为热榜链接
+        '''
         hot_list_dict = {}
         hot_list = []
         headers = {
@@ -95,7 +154,6 @@ class FeishuTalk:
                 # print(item["target"]["link"]["url"])
                 # print(item["target"]["titleArea"]["text"])
 
-                hot_list_dict[title] = url
 
                 bandDict = {"tag": "text"}
                 bandList = []
@@ -103,8 +161,9 @@ class FeishuTalk:
                 bandList.append(bandDict)
                 index += 1
                 hot_list.append(bandList)
-        # return hot_list_dict
-        return hot_list
+                hot_list_dict[title] = url
+        return hot_list_dict
+        # return hot_list
 
 
 
@@ -114,11 +173,28 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # TODO：实现卡片消息的发送
+    # content = FeishuTalk().get_zhihu_hot()
+    # card_content = []
+    # for news_tile, url in content.items():
+        
+    #     card_content.append(key + "：" + value)
+    # response = FeishuTalk().sendCardMessage(card_content)
+    # print(response)
+
+    # 发送富文本消息1
+    content = FeishuTalk().get_zhihu_hot()
+    send_content = []
+    index = 1
+    for title, url in content.items():
+        send_content.append([{"tag": "text", "text": f"No.{index}: "},{ "tag": "a", "text": title, "href": url}])
+        index += 1
+    response = FeishuTalk().sendFuTextmessage1("知乎热榜", send_content)
+    print(response)
 
     # 发送富文本消息
-    content = FeishuTalk().get_zhihu_hot()
-    response = FeishuTalk().sendFuTextmessage(content)
-    print(response)
+    # content = FeishuTalk().get_zhihu_hot()
+    # response = FeishuTalk().sendFuTextmessage(content)
+    # print(response)
 
     # content = FeishuTalk().getHotBand()
     # response = FeishuTalk().sendFuTextmessage(content)
